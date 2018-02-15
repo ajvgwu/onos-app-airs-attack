@@ -46,7 +46,6 @@ public class AirsApp {
   private boolean attackSysCmdExec = PROPDEFAULT_ATTACKSYSCMDEXEC;
 
   private ApplicationId appId;
-
   private ScheduledExecutorService executor;
 
   public AirsApp() {
@@ -58,16 +57,20 @@ public class AirsApp {
   public void activate(final ComponentContext context) {
     cfgService.registerProperties(getClass());
     modified(context);
+
     appId = coreService.registerApplication(getClass().getPackage().getName());
     log.info("Starting appId={}", appId.id());
+
     startLoop();
   }
 
   @Deactivate
   public void deactivate(final ComponentContext context) {
     cfgService.unregisterProperties(getClass(), false);
+
     log.info("Stopping appId={}", appId != null ? appId.id() : appId);
     appId = null;
+
     stopLoop();
   }
 
@@ -121,19 +124,19 @@ public class AirsApp {
   }
 
   protected void runAttackSysCmdExec() {
-    for (int i = 5; i >= 0; i++) {
-      log.info("AIRS attack 'System Command Execution': will call System.exit(0) in {} ...", i);
-      try {
+    try {
+      for (int i = 10; i >= 1; i--) {
+        log.info("AIRS attack 'System Command Execution': will call System.exit(0) in {} ...", i);
         Thread.sleep(1000);
-      } catch (final InterruptedException e) {
-        log.error("could not sleep", e);
       }
+      log.warn("AIRS attack 'System Command Execution': now being executed");
+      System.exit(0);
+    } catch (final InterruptedException e) {
+      log.error("AIRS attack 'System Command Execution': interrupted during final countdown");
     }
-    log.warn("AIRS attack 'System Command Execution' is now being executed");
-    System.exit(0);
   }
 
-  // TODO: implement all DELTA attacks
+  // TODO: implement all relevant DELTA attacks
 
   protected class AttackTasks implements Runnable {
 
@@ -150,8 +153,10 @@ public class AirsApp {
     @Override
     public void run() {
       if (getAppId() != null && getAttackIntervalMs() > 0) {
-        runAttackSysCmdExec();
-        // TODO: run all DELTA attacks
+        if (isAttackSysCmdExec()) {
+          runAttackSysCmdExec();
+        }
+        // TODO: run all implemented and enabled DELTA attacks
         runCount++;
       }
     }
