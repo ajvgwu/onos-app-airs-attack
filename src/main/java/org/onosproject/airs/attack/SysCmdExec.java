@@ -1,16 +1,19 @@
 package org.onosproject.airs.attack;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SysCmdExec extends AbstractAttack {
 
-  public SysCmdExec(final Logger log, final int countdownSec) {
-    super("System Command Execution", log, countdownSec);
+  private final Logger log = LoggerFactory.getLogger(getClass());
+
+  public SysCmdExec(final int countdownSec) {
+    super("System Command Execution", countdownSec);
   }
 
   @Override
-  protected void checkPreConditions() {
-    return;
+  protected Logger getLog() {
+    return log;
   }
 
   @Override

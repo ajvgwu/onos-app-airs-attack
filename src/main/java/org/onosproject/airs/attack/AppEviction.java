@@ -5,28 +5,29 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AppEviction extends AbstractAttack {
+
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
   private final String appName;
   private final ComponentContext ctx;
 
-  public AppEviction(final String appName, final ComponentContext ctx, final Logger log, final int countdownSec) {
-    super("Application Eviction", log, countdownSec);
+  public AppEviction(final String appName, final ComponentContext ctx, final int countdownSec) {
+    super("Application Eviction", countdownSec);
 
     this.ctx = ctx;
     this.appName = appName;
   }
 
   @Override
-  protected void checkPreConditions() throws IllegalArgumentException {
-    if (appName == null) {
-      throw new IllegalArgumentException("application to evict is " + String.valueOf(appName));
-    }
+  protected Logger getLog() {
+    return log;
   }
 
   @Override
-  protected void runAttack() throws RuntimeException {
+  protected void runAttack() {
     final BundleContext bundleCtx = ctx.getBundleContext();
     final Bundle[] bundles = bundleCtx.getBundles();
     for (final Bundle bundle : bundles) {
@@ -35,8 +36,7 @@ public class AppEviction extends AbstractAttack {
         try {
           bundle.uninstall();
         } catch (final BundleException e) {
-          throw new RuntimeException(
-            "while evicting app '" + appName + "', could not uninstall bundle '" + bundle.getSymbolicName() + "'", e);
+          getLog().error("could not uninstall bundle '" + bundle.getSymbolicName() + "'", e);
         }
       }
     }

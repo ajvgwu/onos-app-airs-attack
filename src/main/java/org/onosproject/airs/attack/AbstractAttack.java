@@ -5,12 +5,10 @@ import org.slf4j.Logger;
 public abstract class AbstractAttack implements Runnable {
 
   private final String name;
-  private final Logger log;
   private final int countdownSec;
 
-  public AbstractAttack(final String name, final Logger log, final int countdownSec) {
+  public AbstractAttack(final String name, final int countdownSec) {
     this.name = name;
-    this.log = log;
     this.countdownSec = countdownSec;
   }
 
@@ -18,41 +16,37 @@ public abstract class AbstractAttack implements Runnable {
     return name;
   }
 
-  protected Logger getLog() {
-    return log;
+  protected abstract Logger getLog();
+
+  protected abstract void runAttack();
+
+  protected void cleanupAfterAttack() {
+    getLog().info("AIRS attack '{}' has nothing to clean up", getName());
   }
-
-  protected abstract void checkPreConditions() throws RuntimeException;
-
-  protected abstract void runAttack() throws RuntimeException;
 
   @Override
   public void run() {
-    // Check pre-conditions
-    try {
-      checkPreConditions();
-    } catch (final RuntimeException e) {
-      log.warn("AIRS attack '" + name + "': skipping because of failed pre-condition: " + e.getMessage(), e);
-      return;
-    }
-
     // Countdown
     try {
       for (int i = countdownSec; i >= 1; i--) {
-        log.info("AIRS attack '{}': will execute in {} ...", name, i);
+        getLog().info("AIRS attack '{}' will execute in {} ...", getName(), i);
         Thread.sleep(1000);
       }
     } catch (final InterruptedException e) {
-      log.error("AIRS attack '" + name + "': interrupted during final countdown", e);
+      getLog().error("AIRS attack '" + getName() + "' was interrupted during countdown", e);
       return;
     }
 
     // Execute attack
-    log.info("AIRS attack '{}': now being executed", name);
+    getLog().info("AIRS attack '{}' is now being executed", getName());
     try {
       runAttack();
-    } catch (final RuntimeException e) {
-      log.warn("AIRS attack '" + name + "': " + e.getMessage(), e);
+    } catch (final Exception e) {
+      getLog().error("AIRS attack '" + getName() + "' encountered an error during execution", e);
     }
+
+    // Perform cleanup
+    getLog().info("AIRS attack '{}' is done, proceeding to cleanup", getName());
+    cleanupAfterAttack();
   }
 }
