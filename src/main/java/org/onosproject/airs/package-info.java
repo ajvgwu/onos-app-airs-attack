@@ -1,4 +1,4 @@
 /**
- * ONOS application for AIRS project.
+ * ONOS application for AIRS testbed.
  */
 package org.onosproject.airs;
