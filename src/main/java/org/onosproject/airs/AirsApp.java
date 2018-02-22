@@ -10,6 +10,7 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Service;
 import org.onosproject.airs.attack.AbstractAttack;
 import org.onosproject.airs.attack.AppEviction;
 import org.onosproject.airs.attack.DummyPrint;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * WORK-IN-PROGRESS: ONOS application for AIRS testbed.
  */
 @Component(immediate = true)
+@Service(value = AirsApp.class)
 public class AirsApp {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
