@@ -15,6 +15,8 @@ import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.util.Tools;
+import org.onosproject.airs.attack.AppEviction;
+import org.onosproject.airs.attack.SysCmdExec;
 import org.onosproject.cfg.ComponentConfigService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -28,7 +30,10 @@ import org.slf4j.Logger;
 public class AirsApp {
 
   private static final long PROPDEFAULT_ATTACKINTERVALMS = 30000;
+  private static final int PROPDEFAULT_ATTACKCOUNTDOWNSEC = 3;
   private static final boolean PROPDEFAULT_ATTACKSYSCMDEXEC = false;
+  private static final boolean PROPDEFAULT_ATTACKAPPEVICTION = false;
+  private static final String PROPDEFAULT_ATTACKAPPEVICTIONNAME = "fwd";
 
   private final Logger log = getLogger(getClass());
 
@@ -41,15 +46,29 @@ public class AirsApp {
   @Property(name = "attackIntervalMs", longValue = PROPDEFAULT_ATTACKINTERVALMS, label = "Period of attack loop")
   private long attackIntervalMs = PROPDEFAULT_ATTACKINTERVALMS;
 
+  @Property(name = "attackCountdownSec", intValue = PROPDEFAULT_ATTACKCOUNTDOWNSEC,
+    label = "Number of seconds to countdown before an attack")
+  private int attackCountdownSec = PROPDEFAULT_ATTACKCOUNTDOWNSEC;
+
   @Property(name = "attackSysCmdExec", boolValue = PROPDEFAULT_ATTACKSYSCMDEXEC,
     label = "Whether to perform AIRS attack 'System Command Execution'")
   private boolean attackSysCmdExec = PROPDEFAULT_ATTACKSYSCMDEXEC;
 
+  @Property(name = "attackAppEviction", boolValue = PROPDEFAULT_ATTACKAPPEVICTION,
+    label = "Whether to perform AIRS attack 'App Eviction'")
+  private boolean attackAppEviction = PROPDEFAULT_ATTACKAPPEVICTION;
+
+  @Property(name = "attackAppEvictionName", value = PROPDEFAULT_ATTACKAPPEVICTIONNAME,
+    label = "Name of app to evict for AIRS attack 'App Eviction'")
+  private String attackAppEvictionName = PROPDEFAULT_ATTACKAPPEVICTIONNAME;
+
   private ApplicationId appId;
+  private ComponentContext contextRef;
   private ScheduledExecutorService executor;
 
   public AirsApp() {
     appId = null;
+    contextRef = null;
     executor = null;
   }
 
@@ -59,19 +78,27 @@ public class AirsApp {
     modified(context);
 
     appId = coreService.registerApplication(getClass().getPackage().getName());
-    log.info("Starting appId={}", appId.id());
+    final Short id = appId != null ? appId.id() : null;
+
+    contextRef = context;
 
     startLoop();
+
+    log.info("Started appId={}", id);
   }
 
   @Deactivate
   public void deactivate(final ComponentContext context) {
     cfgService.unregisterProperties(getClass(), false);
 
-    log.info("Stopping appId={}", appId != null ? appId.id() : appId);
+    final Short id = appId != null ? appId.id() : null;
     appId = null;
 
+    contextRef = null;
+
     stopLoop();
+
+    log.info("Stopped appId={}", id);
   }
 
   @Modified
@@ -80,33 +107,47 @@ public class AirsApp {
 
     final Dictionary<?, ?> properties = context.getProperties();
 
-    String value = Tools.get(properties, "attackIntervalMs");
-    if (value != null) {
-      value = value.trim();
-    }
-    attackIntervalMs = value == null || value.length() < 1 ? PROPDEFAULT_ATTACKINTERVALMS : Long.parseLong(value);
-
-    value = Tools.get(properties, "attackSysCmdExec");
-    if (value != null) {
-      value = value.trim();
-    }
-    attackSysCmdExec = value == null || value.length() < 1 ? PROPDEFAULT_ATTACKSYSCMDEXEC : Boolean.parseBoolean(value);
+    attackIntervalMs = getPropAsLong(properties, "attackIntervalMs", PROPDEFAULT_ATTACKINTERVALMS);
+    attackCountdownSec = getPropAsInt(properties, "attackCountdownSec", PROPDEFAULT_ATTACKCOUNTDOWNSEC);
+    attackSysCmdExec = getPropAsBoolean(properties, "attackSysCmdExec", PROPDEFAULT_ATTACKSYSCMDEXEC);
+    attackAppEviction = getPropAsBoolean(properties, "attackAppEviction", PROPDEFAULT_ATTACKAPPEVICTION);
+    attackAppEvictionName = getPropAsString(properties, "attackAppEvictionName", PROPDEFAULT_ATTACKAPPEVICTIONNAME);
 
     if (getAppId() != null && getAttackIntervalMs() > 0) {
       startLoop();
     }
   }
 
+  protected Logger getLog() {
+    return log;
+  }
+
   protected long getAttackIntervalMs() {
     return attackIntervalMs;
+  }
+
+  protected int getAttackCountdownSec() {
+    return attackCountdownSec;
   }
 
   protected boolean isAttackSysCmdExec() {
     return attackSysCmdExec;
   }
 
+  protected boolean isAttackAppEviction() {
+    return attackAppEviction;
+  }
+
+  protected String getAttackAppEvictionName() {
+    return attackAppEvictionName;
+  }
+
   protected ApplicationId getAppId() {
     return appId;
+  }
+
+  protected ComponentContext getContextRef() {
+    return contextRef;
   }
 
   protected void startLoop() {
@@ -123,20 +164,41 @@ public class AirsApp {
     executor = null;
   }
 
-  protected void runAttackSysCmdExec() {
-    try {
-      for (int i = 10; i >= 1; i--) {
-        log.info("AIRS attack 'System Command Execution': will call System.exit(0) in {} ...", i);
-        Thread.sleep(1000);
-      }
-      log.warn("AIRS attack 'System Command Execution': now being executed");
-      System.exit(0);
-    } catch (final InterruptedException e) {
-      log.error("AIRS attack 'System Command Execution': interrupted during final countdown");
+  // TODO: implement all relevant DELTA attacks as subclasses of airs.attack.AbstractAttack
+
+  protected static long getPropAsLong(final Dictionary<?, ?> properties, final String name, final long propDefault) {
+    String value = Tools.get(properties, name);
+    if (value != null) {
+      value = value.trim();
     }
+    return value == null || value.length() < 1 ? propDefault : Long.parseLong(value);
   }
 
-  // TODO: implement all relevant DELTA attacks
+  protected static int getPropAsInt(final Dictionary<?, ?> properties, final String name, final int propDefault) {
+    String value = Tools.get(properties, name);
+    if (value != null) {
+      value = value.trim();
+    }
+    return value == null || value.length() < 1 ? propDefault : Integer.parseInt(value);
+  }
+
+  protected static boolean getPropAsBoolean(final Dictionary<?, ?> properties, final String name,
+    final boolean propDefault) {
+    String value = Tools.get(properties, name);
+    if (value != null) {
+      value = value.trim();
+    }
+    return value == null || value.length() < 1 ? propDefault : Boolean.parseBoolean(value);
+  }
+
+  protected static String getPropAsString(final Dictionary<?, ?> properties, final String name,
+    final String propDefault) {
+    String value = Tools.get(properties, name);
+    if (value != null) {
+      value = value.trim();
+    }
+    return value == null || value.length() < 1 ? propDefault : value;
+  }
 
   protected class AttackTasks implements Runnable {
 
@@ -154,7 +216,10 @@ public class AirsApp {
     public void run() {
       if (getAppId() != null && getAttackIntervalMs() > 0) {
         if (isAttackSysCmdExec()) {
-          runAttackSysCmdExec();
+          new SysCmdExec(getLog(), getAttackCountdownSec()).run();
+        }
+        if (isAttackAppEviction()) {
+          new AppEviction(getAttackAppEvictionName(), getContextRef(), getLog(), getAttackCountdownSec()).run();
         }
         // TODO: run all implemented and enabled DELTA attacks
         runCount++;
