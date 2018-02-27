@@ -197,31 +197,33 @@ public class AirsApp {
     }
 
     // Delay
+    boolean doRun = true;
     if (delayMs > 0) {
       try {
         Thread.sleep(delayMs);
       } catch (final InterruptedException e) {
         logException("interrupted during delay sleep", e);
+        doRun = false;
       }
     }
+    if (doRun) {
 
-    // Execute attack
-    if (intervalMs > 0) {
-      boolean doRunAgain = true;
-      while (doRunAgain) {
-        doRunAgain = false;
-        try {
-          runningAttack.run();
-          Thread.sleep(delayMs);
-          doRunAgain = true;
-        } catch (final InterruptedException e) {
-          logException("interrupted during interval sleep", e);
-          doRunAgain = false;
+      // Execute attack
+      if (intervalMs > 0) {
+        while (doRun) {
+          doRun = false;
+          try {
+            runningAttack.run();
+            Thread.sleep(delayMs);
+            doRun = !runningAttack.isRunning();
+          } catch (final InterruptedException e) {
+            logException("interrupted during interval sleep", e);
+          }
         }
       }
-    }
-    else {
-      runningAttack.run();
+      else {
+        runningAttack.run();
+      }
     }
 
     // Remove log callback(s) from attack
