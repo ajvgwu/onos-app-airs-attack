@@ -72,6 +72,14 @@ public class AirsApp implements AttackDoneCallback {
     return log;
   }
 
+  public boolean addLogCallback(final LogCallback c) {
+    return logCallbacks.add(c);
+  }
+
+  public boolean removeLogCallback(final LogCallback c) {
+    return logCallbacks.remove(c);
+  }
+
   protected void logInfo(final String format, final Object... args) {
     getLog().info(format, args);
     for (final LogCallback c : logCallbacks) {
@@ -91,14 +99,6 @@ public class AirsApp implements AttackDoneCallback {
     for (final LogCallback c : logCallbacks) {
       c.catching(msg, t);
     }
-  }
-
-  public boolean addLogCallback(final LogCallback c) {
-    return logCallbacks.add(c);
-  }
-
-  public boolean removeLogCallback(final LogCallback c) {
-    return logCallbacks.remove(c);
   }
 
   @Activate
@@ -156,7 +156,13 @@ public class AirsApp implements AttackDoneCallback {
     cancelAttackIfRunning();
     runningAttack = attack;
     if (fg) {
+      for (final LogCallback c : logCallbacks) {
+        runningAttack.addLogCallback(c);
+      }
       runningAttack.run();
+      for (final LogCallback c : logCallbacks) {
+        runningAttack.removeLogCallback(c);
+      }
     }
     else {
       attackExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -214,13 +220,16 @@ public class AirsApp implements AttackDoneCallback {
           break;
         }
         // TODO: add case block for all subclasses of airs.attack.AbstractAttack
+        default: {
+          logError("unknown attack name: {}", attackName);
+          break;
+        }
       }
     }
     if (attack != null) {
       scheduleAttack(attack, delayMs, intervalMs, fg);
     }
     else {
-      logError("unknown attack name: {}", attackName);
       printAttackHelp();
     }
   }

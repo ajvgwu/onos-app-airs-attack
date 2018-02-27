@@ -3,13 +3,13 @@
         <command>
             <action class="org.onosproject.airs.cli.AirsAttackCmd"/>
             <completers>
-                <ref component-id="airsAttackCmdCommandCompleter"/>
+                <ref component-id="airsAttackCmdCommandNameCompleter"/>
                 <ref component-id="airsAttackCmdAttackNameCompleter"/>
                 <null/>
             </completers>
         </command>
     </command-bundle>
 
-    <bean id="airsAttackCmdCommandCompleter" class="org.onosproject.airs.cli.AirsAttackCmd.CommandCompleter"/>
+    <bean id="airsAttackCmdCommandNameCompleter" class="org.onosproject.airs.cli.AirsAttackCmd.CommandNameCompleter"/>
     <bean id="airsAttackCmdAttackNameCompleter" class="org.onosproject.airs.cli.AirsAttackCmd.AttackNameCompleter"/>
 </blueprint>

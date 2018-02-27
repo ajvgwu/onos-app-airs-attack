@@ -53,7 +53,7 @@ public class FlowTableClear extends AbstractAttack {
             try {
               Thread.sleep(500);
             } catch (final InterruptedException e) {
-              getLog().error("interrupted during sleep", e);
+              logException("interrupted during sleep", e);
             }
           }
         }

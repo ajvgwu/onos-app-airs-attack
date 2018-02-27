@@ -3,11 +3,13 @@ package org.onosproject.airs.attack;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.onosproject.airs.LogCallback;
 import org.slf4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
 
 public abstract class AbstractAttack implements Runnable {
 
+  private final List<LogCallback> logCallbacks = new ArrayList<>();
   private final List<AttackDoneCallback> finishCallbacks = new ArrayList<>();
 
   private final String name;
@@ -36,6 +38,37 @@ public abstract class AbstractAttack implements Runnable {
     return logName;
   }
 
+  protected abstract Logger getLog();
+
+  public boolean addLogCallback(final LogCallback c) {
+    return logCallbacks.add(c);
+  }
+
+  public boolean removeLogCallback(final LogCallback c) {
+    return logCallbacks.remove(c);
+  }
+
+  protected void logInfo(final String format, final Object... args) {
+    getLog().info(format, args);
+    for (final LogCallback c : logCallbacks) {
+      c.out(format, args);
+    }
+  }
+
+  protected void logError(final String format, final Object... args) {
+    getLog().error(format, args);
+    for (final LogCallback c : logCallbacks) {
+      c.err(format, args);
+    }
+  }
+
+  protected void logException(final String msg, final Throwable t) {
+    getLog().error(msg, t);
+    for (final LogCallback c : logCallbacks) {
+      c.catching(msg, t);
+    }
+  }
+
   public boolean addFinishCallback(final AttackDoneCallback c) {
     return finishCallbacks.add(c);
   }
@@ -44,16 +77,14 @@ public abstract class AbstractAttack implements Runnable {
     return finishCallbacks.remove(c);
   }
 
-  protected abstract Logger getLog();
-
   protected abstract void runAttack();
 
   protected void cleanupAfterAttack() {
-    getLog().info("AIRS attack '{}' has nothing to clean up", getLogName());
+    logInfo("AIRS attack '{}' has nothing to clean up", getLogName());
   }
 
   public void handleInterrupt() {
-    getLog().info("AIRS attack '{}' handling interrupt, proceeding to cleanup", getLogName());
+    logInfo("AIRS attack '{}' handling interrupt, proceeding to cleanup", getLogName());
     cleanupAfterAttack();
   }
 
@@ -62,24 +93,24 @@ public abstract class AbstractAttack implements Runnable {
     // Countdown
     try {
       for (int i = countdownSec; i >= 1; i--) {
-        getLog().info("AIRS attack '{}' will execute in {} ...", getLogName(), i);
+        logInfo("AIRS attack '{}' will execute in {} ...", getLogName(), i);
         Thread.sleep(1000);
       }
     } catch (final InterruptedException e) {
-      getLog().error("AIRS attack '" + getLogName() + "' was interrupted during countdown", e);
+      logInfo("AIRS attack '" + getLogName() + "' was interrupted during countdown", e);
       return;
     }
 
     // Execute attack
-    getLog().info("AIRS attack '{}' is now being executed", getLogName());
+    logInfo("AIRS attack '{}' is now being executed", getLogName());
     try {
       runAttack();
     } catch (final Exception e) {
-      getLog().error("AIRS attack '" + getLogName() + "' encountered an error during execution", e);
+      logException("AIRS attack '" + getLogName() + "' encountered an error during execution", e);
     }
 
     // Perform cleanup
-    getLog().info("AIRS attack '{}' is done, proceeding to cleanup", getLogName());
+    logInfo("AIRS attack '{}' is done, proceeding to cleanup", getLogName());
     cleanupAfterAttack();
 
     // Notify callback(s)

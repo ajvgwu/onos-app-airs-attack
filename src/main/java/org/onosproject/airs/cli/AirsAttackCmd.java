@@ -13,7 +13,7 @@ import org.onosproject.cli.AbstractChoicesCompleter;
 import org.onosproject.cli.AbstractShellCommand;
 import org.slf4j.helpers.MessageFormatter;
 
-@Command(scope = "onos", name = "airs-attack", description = "AIRS attack operations")
+@Command(scope = "onos", name = "airs-attack", description = "AIRS attack commands")
 public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
 
   // Color codes for ONOS CLI
@@ -33,15 +33,16 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
   private static final String DEFAULT_COUNTDOWNSEC = "3";
 
   // Arguments/Options
-  @Argument(index = 0, name = "cmd", required = true,
-    description = "command (one of {" + ONOSCLI_COLOR_BOLD + CMD_EXEC + ONOSCLI_COLOR_RESET + "|" + ONOSCLI_COLOR_BOLD
-      + CMD_CANCEL + ONOSCLI_COLOR_RESET + "|" + ONOSCLI_COLOR_BOLD + CMD_HELP + ONOSCLI_COLOR_RESET + "})",
+  @Argument(index = 0, name = "command", required = true,
+    description = "name of command (one of {" + ONOSCLI_COLOR_BOLD + CMD_EXEC + ONOSCLI_COLOR_RESET + "|"
+      + ONOSCLI_COLOR_BOLD + CMD_CANCEL + ONOSCLI_COLOR_RESET + "|" + ONOSCLI_COLOR_BOLD + CMD_HELP
+      + ONOSCLI_COLOR_RESET + "})",
     valueToShowInHelp = DEFAULT_CMD)
-  private String cmdStr = null;
+  private String commandStr = null;
 
-  @Argument(index = 1, name = "attackName", required = false, description = "if cmd is " + ONOSCLI_COLOR_BOLD + CMD_EXEC
+  @Argument(index = 1, name = "attack", required = false, description = "if command is " + ONOSCLI_COLOR_BOLD + CMD_EXEC
     + ONOSCLI_COLOR_RESET + ", name of the attack to execute (any running attacks will be cancelled)")
-  private String attackNameStr = null;
+  private String attackStr = null;
 
   @Option(name = "-d", aliases = {"--delay-ms"},
     description = "start the attack (plus any additional countdown) after the given delay",
@@ -61,10 +62,10 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
   @Option(name = "-f", aliases = {"--fg"}, description = "perform attack in foreground (redirect output to CLI)")
   private boolean fg = false;
 
-  @Option(name = "-1", aliases = {"--param1"}, description = "extra information required for the specific attack")
+  @Option(name = "--param1", description = "extra information required for the specific attack")
   private String param1Str = null;
 
-  @Option(name = "-2", aliases = {"--param2"}, description = "extra information required for the specific attack")
+  @Option(name = "--param2", description = "extra information required for the specific attack")
   private String param2Str = null;
 
   @Override
@@ -75,10 +76,10 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
     airsApp.addLogCallback(this);
 
     // Handle command
-    cmdStr = Optional.ofNullable(cmdStr).orElse(CMD_HELP);
+    commandStr = Optional.ofNullable(commandStr).orElse(CMD_HELP);
     boolean isExec = false;
     boolean isCancel = false;
-    switch (cmdStr) {
+    switch (commandStr) {
       case CMD_EXEC: {
         isExec = true;
         break;
@@ -91,12 +92,12 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
         break;
       }
       default: {
-        out("{}unknown command: {}{}{}", ONOSCLI_COLOR_ERROR, ONOSCLI_COLOR_BOLD, cmdStr, ONOSCLI_COLOR_RESET);
+        out("{}unknown command: {}{}{}", ONOSCLI_COLOR_ERROR, ONOSCLI_COLOR_BOLD, commandStr, ONOSCLI_COLOR_RESET);
         break;
       }
     }
     if (isExec) {
-      attackNameStr = Optional.ofNullable(attackNameStr).orElse(null);
+      attackStr = Optional.ofNullable(attackStr).orElse(null);
       delayMsStr = Optional.ofNullable(delayMsStr).orElse(DEFAULT_DELAYMS);
       intervalMsStr = Optional.ofNullable(intervalMsStr).orElse(DEFAULT_INTERVALMS);
       countdownSecStr = Optional.ofNullable(countdownSecStr).orElse(DEFAULT_COUNTDOWNSEC);
@@ -109,7 +110,7 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
       final int countdownSec = Integer.parseInt(countdownSecStr);
       final String[] params = param2Str != null ? new String[] {param1Str, param2Str}
         : param1Str != null ? new String[] {param1Str} : new String[] {};
-      airsApp.executeAttackByName(attackNameStr, delayMs, intervalMs, countdownSec, fg, params);
+      airsApp.executeAttackByName(attackStr, delayMs, intervalMs, countdownSec, fg, params);
     }
     else if (isCancel) {
       airsApp.cancelAttackIfRunning();
@@ -149,15 +150,15 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
     System.err.flush();
   }
 
-  public static List<String> getCommands() {
+  public static List<String> getCommandNames() {
     return Arrays.asList(CMD_EXEC, CMD_CANCEL, CMD_HELP);
   }
 
-  public static class CommandCompleter extends AbstractChoicesCompleter {
+  public static class CommandNameCompleter extends AbstractChoicesCompleter {
 
     @Override
     public List<String> choices() {
-      return getCommands();
+      return getCommandNames();
     }
   }
 

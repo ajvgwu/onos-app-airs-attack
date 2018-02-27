@@ -45,11 +45,11 @@ public class AppEviction extends AbstractAttack {
       try {
         matchingBundle.uninstall();
       } catch (final BundleException e) {
-        getLog().error("could not uninstall bundle '" + matchingBundle.getSymbolicName() + "'", e);
+        logException("could not uninstall bundle '" + matchingBundle.getSymbolicName() + "'", e);
       }
     }
     else {
-      getLog().error("could not find application bundle matching '{}'", appName);
+      logError("could not find application bundle matching '{}'", appName);
     }
   }
 }
