@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 public class FlowTableClear extends AbstractAttack {
 
   public static final String NAME = "FlowTableClear";
+  public static final String DESCR = "Flow table clearance";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -22,7 +23,7 @@ public class FlowTableClear extends AbstractAttack {
 
   public FlowTableClear(final DeviceService deviceService, final FlowRuleService flowRuleService,
     final int countdownSec) {
-    super(NAME, "Flow table clearance", countdownSec);
+    super(NAME, DESCR, countdownSec);
 
     this.deviceService = deviceService;
     this.flowRuleService = flowRuleService;

@@ -1,6 +1,7 @@
 package org.onosproject.airs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -171,11 +172,9 @@ public class AirsApp implements AttackDoneCallback {
 
   public void printAttackHelp() {
     logInfo("possible attacks: ");
-    logInfo("  - {}", DummyPrint.NAME);
-    logInfo("  - {}", SysCmdExec.NAME);
-    logInfo("  - {}", InfiniteLoop.NAME);
-    logInfo("  - {}", FlowTableClear.NAME);
-    logInfo("  - {}", AppEviction.NAME);
+    for (final String name : getAttackNames()) {
+      logInfo("  - {}", name);
+    }
   }
 
   /**
@@ -184,7 +183,7 @@ public class AirsApp implements AttackDoneCallback {
    * @param attackName name of the attack ({@code null} to cancel any running attack without executing a new attack)
    * @param params extra information required for the specific attack
    */
-  protected void executeAttackByName(final String attackName, final long delayMs, final long intervalMs,
+  public void executeAttackByName(final String attackName, final long delayMs, final long intervalMs,
     final int countdownSec, final boolean fg, final String... params) {
     AbstractAttack attack = null;
     if (attackName != null) {
@@ -236,4 +235,8 @@ public class AirsApp implements AttackDoneCallback {
   // TODO: implement all relevant DELTA attacks as subclasses of airs.attack.AbstractAttack
 
   // TODO: implement attack that flushes Intents ???
+
+  public static List<String> getAttackNames() {
+    return Arrays.asList(DummyPrint.NAME, SysCmdExec.NAME, InfiniteLoop.NAME, FlowTableClear.NAME, AppEviction.NAME);
+  }
 }

@@ -6,11 +6,12 @@ import org.slf4j.LoggerFactory;
 public class DummyPrint extends AbstractAttack {
 
   public static final String NAME = "DummyPrint";
+  public static final String DESCR = "Dummy print";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   public DummyPrint(final int countdownSec) {
-    super(NAME, "Dummy print", countdownSec);
+    super(NAME, DESCR, countdownSec);
   }
 
   @Override

@@ -1,7 +1,15 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
-            <action class="org.onosproject.airs.AirsExecAttackCmd"/>
+            <action class="org.onosproject.airs.cli.AirsAttackCmd"/>
+            <completers>
+                <ref component-id="airsAttackCmdCommandCompleter"/>
+                <ref component-id="airsAttackCmdAttackNameCompleter"/>
+                <null/>
+            </completers>
         </command>
     </command-bundle>
+
+    <bean id="airsAttackCmdCommandCompleter" class="org.onosproject.airs.cli.AirsAttackCmd.CommandCompleter"/>
+    <bean id="airsAttackCmdAttackNameCompleter" class="org.onosproject.airs.cli.AirsAttackCmd.AttackNameCompleter"/>
 </blueprint>

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 public class AppEviction extends AbstractAttack {
 
   public static final String NAME = "AppEviction";
+  public static final String DESCR = "Application eviction";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -17,7 +18,7 @@ public class AppEviction extends AbstractAttack {
   private final ComponentContext ctx;
 
   public AppEviction(final String appName, final ComponentContext ctx, final int countdownSec) {
-    super(NAME, "Application eviction", countdownSec);
+    super(NAME, DESCR, countdownSec);
 
     this.ctx = ctx;
     this.appName = appName;
