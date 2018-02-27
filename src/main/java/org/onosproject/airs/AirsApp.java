@@ -207,15 +207,16 @@ public class AirsApp {
 
     // Execute attack
     if (intervalMs > 0) {
-      boolean didExec = true;
-      while (didExec) {
-        didExec = false;
+      boolean doRunAgain = true;
+      while (doRunAgain) {
+        doRunAgain = false;
         try {
-          Thread.sleep(delayMs);
           runningAttack.run();
-          didExec = true;
+          Thread.sleep(delayMs);
+          doRunAgain = true;
         } catch (final InterruptedException e) {
           logException("interrupted during interval sleep", e);
+          doRunAgain = false;
         }
       }
     }
