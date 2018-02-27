@@ -131,58 +131,6 @@ public class AirsApp implements AttackDoneCallback {
     return componentContext;
   }
 
-  public void cancelAttackIfRunning() {
-    if (attackExecutor != null && !attackExecutor.isShutdown()) {
-      attackExecutor.shutdown();
-    }
-    if (attackTask != null && !attackTask.isDone()) {
-      logInfo("cancelling attack task");
-      attackTask.cancel(false);
-      if (!attackTask.isDone()) {
-        attackTask.cancel(true);
-      }
-      if (runningAttack != null) {
-        logInfo("cancelling running attack");
-        runningAttack.handleInterrupt();
-      }
-    }
-    runningAttack = null;
-    attackExecutor = null;
-    attackTask = null;
-  }
-
-  protected void scheduleAttack(final AbstractAttack attack, final long delayMs, final long intervalMs,
-    final boolean fg) {
-    cancelAttackIfRunning();
-    runningAttack = attack;
-    if (fg) {
-      for (final LogCallback c : logCallbacks) {
-        runningAttack.addLogCallback(c);
-      }
-      runningAttack.run();
-      for (final LogCallback c : logCallbacks) {
-        runningAttack.removeLogCallback(c);
-      }
-    }
-    else {
-      attackExecutor = Executors.newSingleThreadScheduledExecutor();
-      if (intervalMs > 0) {
-        attackTask = attackExecutor.scheduleWithFixedDelay(runningAttack, Math.max(0, delayMs), intervalMs,
-          TimeUnit.MILLISECONDS);
-      }
-      else {
-        attackTask = attackExecutor.schedule(runningAttack, delayMs, TimeUnit.MILLISECONDS);
-      }
-    }
-  }
-
-  public void printAttackHelp() {
-    logInfo("possible attacks: ");
-    for (final String name : getAttackNames()) {
-      logInfo("  - {}", name);
-    }
-  }
-
   /**
    * Cancel any running attack and then execute the given attack
    *
@@ -227,10 +175,71 @@ public class AirsApp implements AttackDoneCallback {
       }
     }
     if (attack != null) {
-      scheduleAttack(attack, delayMs, intervalMs, fg);
+      if (fg) {
+        executeAttack(attack, delayMs, intervalMs);
+      }
+      else {
+        scheduleAttack(attack, delayMs, intervalMs);
+      }
     }
     else {
       printAttackHelp();
+    }
+  }
+
+  public void executeAttack(final AbstractAttack attack, final long delayMs, final long intervalMs) {
+    // Add log callback(s) to attack
+    for (final LogCallback c : logCallbacks) {
+      runningAttack.addLogCallback(c);
+    }
+
+    // Cancel running attack
+    cancelAttackIfRunning();
+    runningAttack = attack;
+
+    // Delay
+    if (delayMs > 0) {
+      try {
+        Thread.sleep(delayMs);
+      } catch (final InterruptedException e) {
+        logException("interrupted during delay sleep", e);
+      }
+    }
+
+    // Execute attack
+    if (intervalMs > 0) {
+      boolean didExec = true;
+      while (didExec) {
+        didExec = false;
+        try {
+          Thread.sleep(delayMs);
+          runningAttack.run();
+          didExec = true;
+        } catch (final InterruptedException e) {
+          logException("interrupted during interval sleep", e);
+        }
+      }
+    }
+    else {
+      runningAttack.run();
+    }
+
+    // Remove log callback(s) from attack
+    for (final LogCallback c : logCallbacks) {
+      runningAttack.removeLogCallback(c);
+    }
+  }
+
+  public void scheduleAttack(final AbstractAttack attack, final long delayMs, final long intervalMs) {
+    cancelAttackIfRunning();
+    runningAttack = attack;
+    attackExecutor = Executors.newSingleThreadScheduledExecutor();
+    if (intervalMs > 0) {
+      attackTask = attackExecutor.scheduleWithFixedDelay(runningAttack, Math.max(0, delayMs), intervalMs,
+        TimeUnit.MILLISECONDS);
+    }
+    else {
+      attackTask = attackExecutor.schedule(runningAttack, delayMs, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -238,6 +247,33 @@ public class AirsApp implements AttackDoneCallback {
   public void doneRunning(final AbstractAttack attack) {
     if (attack != null && attack.equals(runningAttack)) {
       runningAttack = null;
+    }
+  }
+
+  public void cancelAttackIfRunning() {
+    if (attackExecutor != null && !attackExecutor.isShutdown()) {
+      attackExecutor.shutdown();
+    }
+    if (attackTask != null && !attackTask.isDone()) {
+      logInfo("cancelling attack task");
+      attackTask.cancel(false);
+      if (!attackTask.isDone()) {
+        attackTask.cancel(true);
+      }
+      if (runningAttack != null) {
+        logInfo("cancelling running attack");
+        runningAttack.handleInterrupt();
+      }
+    }
+    runningAttack = null;
+    attackExecutor = null;
+    attackTask = null;
+  }
+
+  public void printAttackHelp() {
+    logInfo("possible attacks: ");
+    for (final String name : getAttackNames()) {
+      logInfo("  - {}", name);
     }
   }
 
