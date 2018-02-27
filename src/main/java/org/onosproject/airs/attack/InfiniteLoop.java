@@ -12,7 +12,7 @@ import org.onosproject.net.packet.PacketService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InfiniteLoop extends AbstractAttack implements AirsPacketProcessor.Callback {
+public class InfiniteLoop extends AbstractAttack {
 
   public static final String NAME = "InfiniteLoop";
   public static final String DESCR = "Infinite loops";
@@ -41,14 +41,23 @@ public class InfiniteLoop extends AbstractAttack implements AirsPacketProcessor.
   @Override
   protected void runAttack() {
     cleanupAfterAttack();
+
+    // Install packet processor
     packetProcessor = new AirsPacketProcessor();
     packetService.addProcessor(packetProcessor, PacketProcessor.advisor(0));
+    logInfo("installed packet processor with infinite loop in callback");
     final TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
     selector.matchEthType(Ethernet.TYPE_IPV4);
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
     selector.matchEthType(Ethernet.TYPE_ARP);
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
-    packetProcessor.setCallback(this);
+    final LoopThread looper = new LoopThread();
+    packetProcessor.setCallback(looper);
+    try {
+      looper.join();
+    } catch (final InterruptedException e) {
+      logException("interrupted while waiting for LoopThread to terminate", e);
+    }
   }
 
   @Override
@@ -59,13 +68,31 @@ public class InfiniteLoop extends AbstractAttack implements AirsPacketProcessor.
     packetProcessor = null;
   }
 
-  @Override
-  public void processPacket(final PacketContext ctx) {
-    int i = 0;
-    while (i < 32767) {
-      i++;
-      if (i == 32766) {
-        i = 0;
+  private class LoopThread extends Thread implements AirsPacketProcessor.Callback {
+
+    public LoopThread() {
+      super();
+    }
+
+    @Override
+    public void run() {
+      while (true) {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          logException("interrupted during LoopThread sleep", e);
+        }
+      }
+    }
+
+    @Override
+    public void processPacket(final PacketContext ctx) {
+      int i = 0;
+      while (i < 32767) {
+        i++;
+        if (i == 32766) {
+          i = 0;
+        }
       }
     }
   }
