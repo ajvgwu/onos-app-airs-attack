@@ -1,5 +1,7 @@
 package org.onosproject.airs;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -13,6 +15,7 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
 import org.onosproject.airs.attack.AbstractAttack;
 import org.onosproject.airs.attack.AppEviction;
+import org.onosproject.airs.attack.AttackDoneCallback;
 import org.onosproject.airs.attack.DummyPrint;
 import org.onosproject.airs.attack.FlowTableClear;
 import org.onosproject.airs.attack.InfiniteLoop;
@@ -31,9 +34,10 @@ import org.slf4j.LoggerFactory;
  */
 @Component(immediate = true)
 @Service(value = AirsApp.class)
-public class AirsApp {
+public class AirsApp implements AttackDoneCallback {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
+  private final List<LogCallback> logCallbacks = new ArrayList<>();
 
   @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
   protected CoreService coreService;
@@ -50,9 +54,7 @@ public class AirsApp {
   private ApplicationId appId;
   private ComponentContext componentContext;
 
-  private long attackDelayMs;
-  private long attackIntervalMs;
-  private int attackCountdownSec;
+  private AbstractAttack runningAttack;
   private ScheduledExecutorService attackExecutor;
   private ScheduledFuture<?> attackTask;
 
@@ -60,15 +62,42 @@ public class AirsApp {
     appId = null;
     componentContext = null;
 
-    attackDelayMs = 1000;
-    attackIntervalMs = 0;
-    attackCountdownSec = 3;
+    runningAttack = null;
     attackExecutor = null;
     attackTask = null;
   }
 
   protected Logger getLog() {
     return log;
+  }
+
+  protected void logInfo(final String format, final Object... args) {
+    getLog().info(format, args);
+    for (final LogCallback c : logCallbacks) {
+      c.out(format, args);
+    }
+  }
+
+  protected void logError(final String format, final Object... args) {
+    getLog().error(format, args);
+    for (final LogCallback c : logCallbacks) {
+      c.err(format, args);
+    }
+  }
+
+  protected void logException(final String msg, final Throwable t) {
+    getLog().error(msg, t);
+    for (final LogCallback c : logCallbacks) {
+      c.catching(msg, t);
+    }
+  }
+
+  public boolean addLogCallback(final LogCallback c) {
+    return logCallbacks.add(c);
+  }
+
+  public boolean removeLogCallback(final LogCallback c) {
+    return logCallbacks.remove(c);
   }
 
   @Activate
@@ -78,7 +107,7 @@ public class AirsApp {
 
     componentContext = context;
 
-    getLog().info("started appId={}", id);
+    logInfo("started appId={}", id);
   }
 
   @Deactivate
@@ -90,7 +119,7 @@ public class AirsApp {
 
     componentContext = null;
 
-    getLog().info("stopped appId={}", id);
+    logInfo("stopped appId={}", id);
   }
 
   protected ApplicationId getAppId() {
@@ -101,40 +130,52 @@ public class AirsApp {
     return componentContext;
   }
 
-  public long getAttackDelayMs() {
-    return attackDelayMs;
-  }
-
-  public void setAttackDelayMs(final long attackDelayMs) {
-    this.attackDelayMs = attackDelayMs;
-  }
-
-  public long getAttackIntervalMs() {
-    return attackIntervalMs;
-  }
-
-  public void setAttackIntervalMs(final long attackIntervalMs) {
-    this.attackIntervalMs = attackIntervalMs;
-  }
-
-  public int getAttackCountdownSec() {
-    return attackCountdownSec;
-  }
-
-  public void setAttackCountdownSec(final int attackCountdownSec) {
-    this.attackCountdownSec = attackCountdownSec;
-  }
-
-  protected void cancelAttackIfRunning() {
+  public void cancelAttackIfRunning() {
+    if (attackExecutor != null && !attackExecutor.isShutdown()) {
+      attackExecutor.shutdown();
+    }
     if (attackTask != null && !attackTask.isDone()) {
+      logInfo("cancelling attack task");
       attackTask.cancel(false);
+      if (!attackTask.isDone()) {
+        attackTask.cancel(true);
+      }
+      if (runningAttack != null) {
+        logInfo("cancelling running attack");
+        runningAttack.handleInterrupt();
+      }
     }
-    if (attackExecutor != null) {
-      getLog().info("cancelling running attack");
-      attackExecutor.shutdownNow();
-    }
+    runningAttack = null;
     attackExecutor = null;
     attackTask = null;
+  }
+
+  protected void scheduleAttack(final AbstractAttack attack, final long delayMs, final long intervalMs,
+    final boolean fg) {
+    cancelAttackIfRunning();
+    runningAttack = attack;
+    if (fg) {
+      runningAttack.run();
+    }
+    else {
+      attackExecutor = Executors.newSingleThreadScheduledExecutor();
+      if (intervalMs > 0) {
+        attackTask = attackExecutor.scheduleWithFixedDelay(runningAttack, Math.max(0, delayMs), intervalMs,
+          TimeUnit.MILLISECONDS);
+      }
+      else {
+        attackTask = attackExecutor.schedule(runningAttack, delayMs, TimeUnit.MILLISECONDS);
+      }
+    }
+  }
+
+  public void printAttackHelp() {
+    logInfo("possible attacks: ");
+    logInfo("  - {}", DummyPrint.NAME);
+    logInfo("  - {}", SysCmdExec.NAME);
+    logInfo("  - {}", InfiniteLoop.NAME);
+    logInfo("  - {}", FlowTableClear.NAME);
+    logInfo("  - {}", AppEviction.NAME);
   }
 
   /**
@@ -143,54 +184,56 @@ public class AirsApp {
    * @param attackName name of the attack ({@code null} to cancel any running attack without executing a new attack)
    * @param params extra information required for the specific attack
    */
-  protected void executeAttackByName(final String attackName, final String... params) {
-    cancelAttackIfRunning();
+  protected void executeAttackByName(final String attackName, final long delayMs, final long intervalMs,
+    final int countdownSec, final boolean fg, final String... params) {
+    AbstractAttack attack = null;
     if (attackName != null) {
-      attackExecutor = Executors.newSingleThreadScheduledExecutor();
-      AbstractAttack attack = null;
       switch (attackName) {
-        case "DummyPrint": {
-          attack = new DummyPrint(getAttackCountdownSec());
+        case DummyPrint.NAME: {
+          attack = new DummyPrint(countdownSec);
           break;
         }
-        case "SysCmdExec": {
-          attack = new SysCmdExec(getAttackCountdownSec());
+        case SysCmdExec.NAME: {
+          attack = new SysCmdExec(countdownSec);
           break;
         }
-        case "InfiniteLoop": {
-          attack = new InfiniteLoop(getAppId(), packetService, getAttackCountdownSec());
+        case InfiniteLoop.NAME: {
+          attack = new InfiniteLoop(getAppId(), packetService, countdownSec);
           break;
         }
-        case "FlowTableClear": {
-          attack = new FlowTableClear(deviceService, flowRuleService, getAttackCountdownSec());
+        case FlowTableClear.NAME: {
+          attack = new FlowTableClear(deviceService, flowRuleService, countdownSec);
           break;
         }
-        case "AppEviction": {
-          if (params != null && params.length > 0) {
-            attack = new AppEviction(params[0], getComponentContext(), getAttackCountdownSec());
+        case AppEviction.NAME: {
+          if (params != null && params.length > 0 && params[0] != null) {
+            attack = new AppEviction(params[0], getComponentContext(), countdownSec);
           }
           else {
-            getLog().error("attack '{}' requires 1 parameter: appName", attackName);
+            logError("attack '{}' requires 1 parameter: appName", attackName);
           }
           break;
         }
         // TODO: add case block for all subclasses of airs.attack.AbstractAttack
-        default: {
-          getLog().error("unknown attack name: {}", attackName);
-        }
       }
-      if (attack != null) {
-        final long delayMs = Math.max(getAttackDelayMs(), 0);
-        if (getAttackIntervalMs() > 0) {
-          attackTask = attackExecutor.scheduleWithFixedDelay(attack, delayMs, getAttackIntervalMs(),
-            TimeUnit.MILLISECONDS);
-        }
-        else {
-          attackTask = attackExecutor.schedule(attack, delayMs, TimeUnit.MILLISECONDS);
-        }
-      }
+    }
+    if (attack != null) {
+      scheduleAttack(attack, delayMs, intervalMs, fg);
+    }
+    else {
+      logError("unknown attack name: {}", attackName);
+      printAttackHelp();
+    }
+  }
+
+  @Override
+  public void doneRunning(final AbstractAttack attack) {
+    if (attack != null && attack.equals(runningAttack)) {
+      runningAttack = null;
     }
   }
 
   // TODO: implement all relevant DELTA attacks as subclasses of airs.attack.AbstractAttack
+
+  // TODO: implement attack that flushes Intents ???
 }

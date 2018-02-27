@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 public class InfiniteLoop extends AbstractAttack implements AirsPacketProcessor.Callback {
 
+  public static final String NAME = "InfiniteLoop";
+
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   private final ApplicationId appId;
@@ -22,7 +24,7 @@ public class InfiniteLoop extends AbstractAttack implements AirsPacketProcessor.
   private AirsPacketProcessor packetProcessor;
 
   public InfiniteLoop(final ApplicationId appId, final PacketService packetService, final int countdownSec) {
-    super("Infinite Loops", countdownSec);
+    super(NAME, "Infinite loops", countdownSec);
 
     this.appId = appId;
     this.packetService = packetService;
