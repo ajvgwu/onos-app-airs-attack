@@ -24,6 +24,7 @@ public class InfiniteLoop extends AbstractAttack {
   private final ApplicationId appId;
   private final PacketService packetService;
 
+  private LoopThread loopThread;
   private AirsPacketProcessor packetProcessor;
 
   public InfiniteLoop(final ApplicationId appId, final PacketService packetService, final int countdownSec) {
@@ -32,6 +33,7 @@ public class InfiniteLoop extends AbstractAttack {
     this.appId = appId;
     this.packetService = packetService;
 
+    loopThread = null;
     packetProcessor = null;
   }
 
@@ -44,8 +46,14 @@ public class InfiniteLoop extends AbstractAttack {
   protected void runAttack() {
     cleanupAfterAttack();
 
+    // Create loop thread
+    loopThread = new LoopThread();
+    loopThread.start();
+    logInfo("created LoopThread");
+
     // Install packet processor
     packetProcessor = new AirsPacketProcessor();
+    packetProcessor.setCallback(loopThread);
     packetService.addProcessor(packetProcessor, PacketProcessor.advisor(0));
     logInfo("installed packet processor");
 
@@ -55,14 +63,12 @@ public class InfiniteLoop extends AbstractAttack {
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
     selector.matchEthType(Ethernet.TYPE_ARP);
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
-    logInfo("packet processor requesting IPv4 and ARP packets");
+    logInfo("packet processor requested IPv4 and ARP packets");
 
-    // Create loop thread
-    final LoopThread t = new LoopThread();
-    t.start();
-    packetProcessor.setCallback(t);
+    // Wait for thread to terminate
+    logInfo("waiting for LoopThread to terminate");
     try {
-      t.join();
+      loopThread.join();
     } catch (final InterruptedException e) {
       logException("interrupted while waiting for LoopThread to terminate", e);
     }
@@ -73,6 +79,10 @@ public class InfiniteLoop extends AbstractAttack {
     if (packetProcessor != null) {
       packetService.removeProcessor(packetProcessor);
     }
+    if (loopThread != null && loopThread.isAlive()) {
+      loopThread.interrupt();
+    }
+    loopThread = null;
     packetProcessor = null;
   }
 
@@ -98,14 +108,13 @@ public class InfiniteLoop extends AbstractAttack {
       final InboundPacket pkt = ctx.inPacket();
       final ConnectPoint pktFrom = pkt.receivedFrom();
       final Ethernet pktParsed = pkt.parsed();
-      logInfo("inbound packet from {}: {}", pktFrom, pktParsed);
+      logInfo("got inbound packet from {}: {}", pktFrom, pktParsed);
       logInfo("now starting infinite loop");
       int i = 0;
       while (i < 32767) {
         i++;
         if (i == 32766) {
           i = 0;
-          logInfo("still looping...");
         }
       }
     }
