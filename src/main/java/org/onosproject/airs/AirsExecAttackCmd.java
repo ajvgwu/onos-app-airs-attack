@@ -107,16 +107,19 @@ public class AirsExecAttackCmd extends AbstractShellCommand implements LogCallba
   @Override
   public void out(final String format, final Object... args) {
     System.out.println(MessageFormatter.arrayFormat(format, args).getMessage());
+    System.out.flush();
   }
 
   @Override
   public void err(final String format, final Object... args) {
     System.err.println(MessageFormatter.arrayFormat(format, args).getMessage());
+    System.err.flush();
   }
 
   @Override
   public void catching(final String msg, final Throwable t) {
     System.err.println(msg);
     t.printStackTrace(System.err);
+    System.err.flush();
   }
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
+import org.slf4j.helpers.MessageFormatter;
 
 public abstract class AbstractAttack implements Runnable {
 
@@ -13,10 +14,14 @@ public abstract class AbstractAttack implements Runnable {
   private final String description;
   private final int countdownSec;
 
+  private final String logName;
+
   public AbstractAttack(final String name, final String description, final int countdownSec) {
     this.name = name;
     this.description = description;
     this.countdownSec = countdownSec;
+
+    logName = MessageFormatter.format("{} ({})", getName(), getDescription()).getMessage();
   }
 
   public String getName() {
@@ -28,7 +33,7 @@ public abstract class AbstractAttack implements Runnable {
   }
 
   public String getLogName() {
-    return String.format("{} ({})", getName(), getDescription());
+    return logName;
   }
 
   public boolean addFinishCallback(final AttackDoneCallback c) {
