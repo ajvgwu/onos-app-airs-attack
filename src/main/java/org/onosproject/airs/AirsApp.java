@@ -19,11 +19,13 @@ import org.onosproject.airs.attack.AppEviction;
 import org.onosproject.airs.attack.DummyPrint;
 import org.onosproject.airs.attack.FlowTableClear;
 import org.onosproject.airs.attack.InfiniteLoop;
+import org.onosproject.airs.attack.IntentWithdraw;
 import org.onosproject.airs.attack.SysCmdExec;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowRuleService;
+import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.packet.PacketService;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -50,6 +52,9 @@ public class AirsApp {
 
   @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
   protected FlowRuleService flowRuleService;
+
+  @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+  protected IntentService intentService;
 
   private ApplicationId appId;
   private ComponentContext componentContext;
@@ -155,6 +160,10 @@ public class AirsApp {
         }
         case FlowTableClear.NAME: {
           attack = new FlowTableClear(deviceService, flowRuleService, countdownSec);
+          break;
+        }
+        case IntentWithdraw.NAME: {
+          attack = new IntentWithdraw(intentService, countdownSec);
           break;
         }
         case AppEviction.NAME: {
@@ -270,10 +279,10 @@ public class AirsApp {
   }
 
   // TODO: implement all relevant DELTA attacks as subclasses of airs.attack.AbstractAttack
-
-  // TODO: implement attack that flushes Intents ???
+  // TODO: implement new & interesting attacks as subclasses of airs.attack.AbstractAttack
 
   public static List<String> getAttackNames() {
-    return Arrays.asList(DummyPrint.NAME, SysCmdExec.NAME, InfiniteLoop.NAME, FlowTableClear.NAME, AppEviction.NAME);
+    return Arrays.asList(DummyPrint.NAME, SysCmdExec.NAME, InfiniteLoop.NAME, FlowTableClear.NAME, IntentWithdraw.NAME,
+      AppEviction.NAME);
   }
 }

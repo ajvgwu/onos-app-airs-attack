@@ -42,14 +42,14 @@ public class FlowTableClear extends AbstractAttack {
     final Iterable<Device> devices = deviceService.getDevices();
     final Iterator<Device> deviceIter = devices.iterator();
     while (deviceIter.hasNext()) {
-      final Device device = (Device) deviceIter.next();
+      final Device device = deviceIter.next();
       numDevices++;
 
       // Iterate over flows
       final Iterable<FlowEntry> flowEntries = flowRuleService.getFlowEntries(device.id());
       final Iterator<FlowEntry> flowEntryIter = flowEntries.iterator();
       while (flowEntryIter.hasNext()) {
-        final FlowEntry flowEntry = (FlowEntry) flowEntryIter.next();
+        final FlowEntry flowEntry = flowEntryIter.next();
         numFlows++;
 
         // Remove flow
