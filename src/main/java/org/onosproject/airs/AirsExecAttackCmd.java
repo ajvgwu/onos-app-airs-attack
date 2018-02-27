@@ -1,5 +1,6 @@
 package org.onosproject.airs;
 
+import java.text.MessageFormat;
 import java.util.Optional;
 
 import org.apache.karaf.shell.commands.Argument;
@@ -105,17 +106,17 @@ public class AirsExecAttackCmd extends AbstractShellCommand implements LogCallba
 
   @Override
   public void out(final String format, final Object... args) {
-    System.out.printf(format, args);
+    System.out.println(MessageFormat.format(format, args));
   }
 
   @Override
   public void err(final String format, final Object... args) {
-    System.err.printf(format, args);
+    System.err.println(MessageFormat.format(format, args));
   }
 
   @Override
   public void catching(final String msg, final Throwable t) {
     System.err.println(msg);
-    t.printStackTrace();
+    t.printStackTrace(System.err);
   }
 }
