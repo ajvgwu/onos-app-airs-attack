@@ -34,13 +34,13 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
 
   // Arguments/Options
   @Argument(index = 0, name = "command", required = true,
-    description = "name of command (one of {" + ONOSCLI_COLOR_BOLD + CMD_EXEC + ONOSCLI_COLOR_RESET + "|"
+    description = "name of the command (one of {" + ONOSCLI_COLOR_BOLD + CMD_EXEC + ONOSCLI_COLOR_RESET + "|"
       + ONOSCLI_COLOR_BOLD + CMD_CANCEL + ONOSCLI_COLOR_RESET + "|" + ONOSCLI_COLOR_BOLD + CMD_HELP
       + ONOSCLI_COLOR_RESET + "})",
     valueToShowInHelp = DEFAULT_CMD)
   private String commandStr = null;
 
-  @Argument(index = 1, name = "attack", required = false, description = "if command is " + ONOSCLI_COLOR_BOLD + CMD_EXEC
+  @Argument(index = 1, name = "attack", required = false, description = "if command=" + ONOSCLI_COLOR_BOLD + CMD_EXEC
     + ONOSCLI_COLOR_RESET + ", name of the attack to execute (any running attacks will be cancelled)")
   private String attackStr = null;
 

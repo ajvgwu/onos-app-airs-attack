@@ -10,7 +10,6 @@ import org.slf4j.helpers.MessageFormatter;
 public abstract class AbstractAttack implements Runnable {
 
   private final List<LogCallback> logCallbacks = new ArrayList<>();
-  private final List<AttackDoneCallback> finishCallbacks = new ArrayList<>();
 
   private final String name;
   private final String description;
@@ -18,12 +17,16 @@ public abstract class AbstractAttack implements Runnable {
 
   private final String logName;
 
+  private boolean isRunning;
+
   public AbstractAttack(final String name, final String description, final int countdownSec) {
     this.name = name;
     this.description = description;
     this.countdownSec = countdownSec;
 
     logName = MessageFormatter.format("{} ({})", getName(), getDescription()).getMessage();
+
+    isRunning = false;
   }
 
   public String getName() {
@@ -69,14 +72,6 @@ public abstract class AbstractAttack implements Runnable {
     }
   }
 
-  public boolean addFinishCallback(final AttackDoneCallback c) {
-    return finishCallbacks.add(c);
-  }
-
-  public boolean removeFinishCallback(final AttackDoneCallback c) {
-    return finishCallbacks.remove(c);
-  }
-
   protected abstract void runAttack();
 
   protected void cleanupAfterAttack() {
@@ -86,10 +81,18 @@ public abstract class AbstractAttack implements Runnable {
   public void handleInterrupt() {
     logInfo("AIRS attack '{}' handling interrupt, proceeding to cleanup", getLogName());
     cleanupAfterAttack();
+    isRunning = false;
+  }
+
+  public boolean isRunning() {
+    return isRunning;
   }
 
   @Override
   public void run() {
+    // Starting
+    isRunning = true;
+
     // Countdown
     try {
       for (int i = countdownSec; i >= 1; i--) {
@@ -113,9 +116,7 @@ public abstract class AbstractAttack implements Runnable {
     logInfo("AIRS attack '{}' is done, proceeding to cleanup", getLogName());
     cleanupAfterAttack();
 
-    // Notify callback(s)
-    for (final AttackDoneCallback c : finishCallbacks) {
-      c.doneRunning(this);
-    }
+    // Done.
+    isRunning = false;
   }
 }

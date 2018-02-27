@@ -16,7 +16,6 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
 import org.onosproject.airs.attack.AbstractAttack;
 import org.onosproject.airs.attack.AppEviction;
-import org.onosproject.airs.attack.AttackDoneCallback;
 import org.onosproject.airs.attack.DummyPrint;
 import org.onosproject.airs.attack.FlowTableClear;
 import org.onosproject.airs.attack.InfiniteLoop;
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 @Component(immediate = true)
 @Service(value = AirsApp.class)
-public class AirsApp implements AttackDoneCallback {
+public class AirsApp {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final List<LogCallback> logCallbacks = new ArrayList<>();
@@ -188,14 +187,14 @@ public class AirsApp implements AttackDoneCallback {
   }
 
   public void executeAttack(final AbstractAttack attack, final long delayMs, final long intervalMs) {
+    // Cancel running attack
+    cancelAttackIfRunning();
+    runningAttack = attack;
+
     // Add log callback(s) to attack
     for (final LogCallback c : logCallbacks) {
       runningAttack.addLogCallback(c);
     }
-
-    // Cancel running attack
-    cancelAttackIfRunning();
-    runningAttack = attack;
 
     // Delay
     if (delayMs > 0) {
@@ -243,13 +242,6 @@ public class AirsApp implements AttackDoneCallback {
     }
   }
 
-  @Override
-  public void doneRunning(final AbstractAttack attack) {
-    if (attack != null && attack.equals(runningAttack)) {
-      runningAttack = null;
-    }
-  }
-
   public void cancelAttackIfRunning() {
     if (attackExecutor != null && !attackExecutor.isShutdown()) {
       attackExecutor.shutdown();
@@ -261,8 +253,10 @@ public class AirsApp implements AttackDoneCallback {
         attackTask.cancel(true);
       }
       if (runningAttack != null) {
-        logInfo("cancelling running attack");
-        runningAttack.handleInterrupt();
+        if (runningAttack.isRunning()) {
+          logInfo("cancelling running attack");
+          runningAttack.handleInterrupt();
+        }
       }
     }
     runningAttack = null;
