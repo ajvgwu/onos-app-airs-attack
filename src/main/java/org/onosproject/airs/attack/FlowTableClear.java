@@ -6,8 +6,6 @@ import org.onosproject.net.Device;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowEntry;
 import org.onosproject.net.flow.FlowRuleService;
-import org.onosproject.net.flow.TrafficSelector;
-import org.onosproject.net.flow.criteria.Criterion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,28 +34,37 @@ public class FlowTableClear extends AbstractAttack {
 
   @Override
   protected void runAttack() {
-    final int cnt = 1;
-    for (int i = 0; i < cnt; i++) {
-      final Iterable<Device> devices = deviceService.getDevices();
-      final Iterator<Device> deviceIter = devices.iterator();
-      while (deviceIter.hasNext()) {
-        final Device device = (Device) deviceIter.next();
-        final Iterable<FlowEntry> flowEntries = flowRuleService.getFlowEntries(device.id());
-        final Iterator<FlowEntry> flowEntryIter = flowEntries.iterator();
-        while (flowEntryIter.hasNext()) {
-          final FlowEntry flowEntry = (FlowEntry) flowEntryIter.next();
-          final TrafficSelector select = flowEntry.selector();
-          final Criterion criterion = select.getCriterion(Criterion.Type.ETH_TYPE);
-          if (criterion != null) {
-            flowRuleService.removeFlowRules(flowEntry);
-            try {
-              Thread.sleep(500);
-            } catch (final InterruptedException e) {
-              logException("interrupted during sleep", e);
-            }
-          }
-        }
+    logInfo("will try to remove all flow rules from all devices");
+    int numDevices = 0;
+    int numFlows = 0;
+
+    // Iterate over devices
+    final Iterable<Device> devices = deviceService.getDevices();
+    final Iterator<Device> deviceIter = devices.iterator();
+    while (deviceIter.hasNext()) {
+      final Device device = (Device) deviceIter.next();
+      numDevices++;
+
+      // Iterate over flows
+      final Iterable<FlowEntry> flowEntries = flowRuleService.getFlowEntries(device.id());
+      final Iterator<FlowEntry> flowEntryIter = flowEntries.iterator();
+      while (flowEntryIter.hasNext()) {
+        final FlowEntry flowEntry = (FlowEntry) flowEntryIter.next();
+        numFlows++;
+
+        // Remove flow
+        flowRuleService.removeFlowRules(flowEntry);
+      }
+
+      // Don't go too fast, wait a reasonable amount of time
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        logException("interrupted during sleep", e);
       }
     }
+
+    // Done.
+    logInfo("removed {} flow rules from {} devices", numFlows, numDevices);
   }
 }
