@@ -214,7 +214,7 @@ public class AirsApp {
           doRun = false;
           try {
             runningAttack.run();
-            Thread.sleep(delayMs);
+            Thread.sleep(intervalMs);
             doRun = !runningAttack.isRunning();
           } catch (final InterruptedException e) {
             logException("interrupted during interval sleep", e);
