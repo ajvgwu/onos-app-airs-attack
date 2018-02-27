@@ -245,20 +245,15 @@ public class AirsApp {
 
   public void cancelAttackIfRunning() {
     if (attackExecutor != null && !attackExecutor.isShutdown()) {
-      attackExecutor.shutdown();
+      attackExecutor.shutdownNow();
     }
     if (attackTask != null && !attackTask.isDone()) {
       logInfo("cancelling attack task");
-      attackTask.cancel(false);
-      if (!attackTask.isDone()) {
-        attackTask.cancel(true);
-      }
-      if (runningAttack != null) {
-        if (runningAttack.isRunning()) {
-          logInfo("cancelling running attack");
-          runningAttack.handleInterrupt();
-        }
-      }
+      attackTask.cancel(true);
+    }
+    if (runningAttack != null && runningAttack.isRunning()) {
+      logInfo("interrupting running attack");
+      runningAttack.handleInterrupt();
     }
     runningAttack = null;
     attackExecutor = null;
