@@ -1,12 +1,12 @@
 package org.onosproject.airs;
 
-import java.text.MessageFormat;
 import java.util.Optional;
 
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.apache.karaf.shell.commands.Option;
 import org.onosproject.cli.AbstractShellCommand;
+import org.slf4j.helpers.MessageFormatter;
 
 @Command(scope = "onos", name = "airs-exec-attack", description = "execute an AIRS attack")
 public class AirsExecAttackCmd extends AbstractShellCommand implements LogCallback {
@@ -106,12 +106,12 @@ public class AirsExecAttackCmd extends AbstractShellCommand implements LogCallba
 
   @Override
   public void out(final String format, final Object... args) {
-    System.out.println(MessageFormat.format(format, args));
+    System.out.println(MessageFormatter.arrayFormat(format, args).getMessage());
   }
 
   @Override
   public void err(final String format, final Object... args) {
-    System.err.println(MessageFormat.format(format, args));
+    System.err.println(MessageFormatter.arrayFormat(format, args).getMessage());
   }
 
   @Override
