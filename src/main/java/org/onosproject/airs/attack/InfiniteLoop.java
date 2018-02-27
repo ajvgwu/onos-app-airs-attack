@@ -3,8 +3,10 @@ package org.onosproject.airs.attack;
 import org.onlab.packet.Ethernet;
 import org.onosproject.airs.AirsPacketProcessor;
 import org.onosproject.core.ApplicationId;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.TrafficSelector;
+import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
@@ -45,16 +47,22 @@ public class InfiniteLoop extends AbstractAttack {
     // Install packet processor
     packetProcessor = new AirsPacketProcessor();
     packetService.addProcessor(packetProcessor, PacketProcessor.advisor(0));
-    logInfo("installed packet processor with infinite loop in callback");
+    logInfo("installed packet processor");
+
+    // Request IPv4 and ARP packets
     final TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
     selector.matchEthType(Ethernet.TYPE_IPV4);
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
     selector.matchEthType(Ethernet.TYPE_ARP);
     packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
-    final LoopThread looper = new LoopThread();
-    packetProcessor.setCallback(looper);
+    logInfo("packet processor requesting IPv4 and ARP packets");
+
+    // Create loop thread
+    final LoopThread t = new LoopThread();
+    t.start();
+    packetProcessor.setCallback(t);
     try {
-      looper.join();
+      t.join();
     } catch (final InterruptedException e) {
       logException("interrupted while waiting for LoopThread to terminate", e);
     }
@@ -87,11 +95,17 @@ public class InfiniteLoop extends AbstractAttack {
 
     @Override
     public void processPacket(final PacketContext ctx) {
+      final InboundPacket pkt = ctx.inPacket();
+      final ConnectPoint pktFrom = pkt.receivedFrom();
+      final Ethernet pktParsed = pkt.parsed();
+      logInfo("inbound packet from {}: {}", pktFrom, pktParsed);
+      logInfo("now starting infinite loop");
       int i = 0;
       while (i < 32767) {
         i++;
         if (i == 32766) {
           i = 0;
+          logInfo("still looping...");
         }
       }
     }
