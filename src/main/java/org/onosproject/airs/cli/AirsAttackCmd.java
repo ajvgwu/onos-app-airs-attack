@@ -45,7 +45,7 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
     + ONOSCLI_COLOR_RESET + ", name of the attack to execute (any running attacks will be cancelled)")
   private String attackStr = null;
 
-  @Argument(index = 2, name = "param", required = false, multiValued = true,
+  @Argument(index = 2, name = "param...", required = false, multiValued = true,
     description = "param(s) required by some attacks")
   private List<String> paramList = new ArrayList<>();
 
@@ -103,7 +103,7 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
       countdownSecStr = Optional.ofNullable(countdownSecStr).orElse(DEFAULT_COUNTDOWNSEC);
       fg = !!fg;
 
-      final String[] params = paramList.toArray(new String[paramList.size()]);
+      final String[] params = paramList != null ? paramList.toArray(new String[paramList.size()]) : new String[0];
       final long delayMs = Long.parseLong(delayMsStr);
       final long intervalMs = Long.parseLong(intervalMsStr);
       final int countdownSec = Integer.parseInt(countdownSecStr);
