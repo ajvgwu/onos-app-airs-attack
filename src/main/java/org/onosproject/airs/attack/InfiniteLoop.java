@@ -1,7 +1,6 @@
 package org.onosproject.airs.attack;
 
 import org.onlab.packet.Ethernet;
-import org.onosproject.airs.AirsPacketProcessor;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.flow.DefaultTrafficSelector;
@@ -69,7 +68,8 @@ public class InfiniteLoop extends AbstractAttack {
     logInfo("waiting for LoopThread to terminate");
     try {
       loopThread.join();
-    } catch (final InterruptedException e) {
+    }
+    catch (final InterruptedException e) {
       logException("interrupted while waiting for LoopThread to terminate", e);
     }
   }
@@ -97,7 +97,8 @@ public class InfiniteLoop extends AbstractAttack {
       while (true) {
         try {
           Thread.sleep(1000);
-        } catch (final InterruptedException e) {
+        }
+        catch (final InterruptedException e) {
           logException("interrupted during LoopThread sleep", e);
         }
       }

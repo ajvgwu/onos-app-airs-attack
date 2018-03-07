@@ -1,4 +1,4 @@
-package org.onosproject.airs;
+package org.onosproject.airs.attack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,24 +7,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
-import org.onosproject.airs.attack.AbstractAttack;
-import org.onosproject.airs.attack.AppEviction;
-import org.onosproject.airs.attack.DummyPrint;
-import org.onosproject.airs.attack.FlowTableClear;
-import org.onosproject.airs.attack.InfiniteLoop;
-import org.onosproject.airs.attack.IntentWithdraw;
-import org.onosproject.airs.attack.SysCmdExec;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowRuleService;
+import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.packet.PacketService;
 import org.osgi.service.component.ComponentContext;
@@ -32,11 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * WORK-IN-PROGRESS: ONOS application for AIRS testbed.
+ * WORK-IN-PROGRESS: AIRS-ONOS application for executing attacks.
  */
 @Component(immediate = true)
-@Service(value = AirsApp.class)
-public class AirsApp {
+@Service(value = AirsAttackApp.class)
+public class AirsAttackApp {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final List<LogCallback> logCallbacks = new ArrayList<>();
@@ -56,6 +49,9 @@ public class AirsApp {
   @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
   protected IntentService intentService;
 
+  @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+  protected HostService hostService;
+
   private ApplicationId appId;
   private ComponentContext componentContext;
 
@@ -63,7 +59,7 @@ public class AirsApp {
   private ScheduledExecutorService attackExecutor;
   private ScheduledFuture<?> attackTask;
 
-  public AirsApp() {
+  public AirsAttackApp() {
     appId = null;
     componentContext = null;
 
@@ -210,7 +206,8 @@ public class AirsApp {
     if (delayMs > 0) {
       try {
         Thread.sleep(delayMs);
-      } catch (final InterruptedException e) {
+      }
+      catch (final InterruptedException e) {
         logException("interrupted during delay sleep", e);
         doRun = false;
       }
@@ -225,7 +222,8 @@ public class AirsApp {
             runningAttack.run();
             Thread.sleep(intervalMs);
             doRun = !runningAttack.isRunning();
-          } catch (final InterruptedException e) {
+          }
+          catch (final InterruptedException e) {
             logException("interrupted during interval sleep", e);
           }
         }

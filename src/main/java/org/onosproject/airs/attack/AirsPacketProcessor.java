@@ -1,4 +1,4 @@
-package org.onosproject.airs;
+package org.onosproject.airs.attack;
 
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;

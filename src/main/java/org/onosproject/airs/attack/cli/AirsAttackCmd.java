@@ -1,15 +1,14 @@
-package org.onosproject.airs.cli;
+package org.onosproject.airs.attack.cli;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.apache.karaf.shell.commands.Option;
-import org.onosproject.airs.AirsApp;
-import org.onosproject.airs.LogCallback;
+import org.onosproject.airs.attack.AirsAttackApp;
+import org.onosproject.airs.attack.LogCallback;
 import org.onosproject.cli.AbstractChoicesCompleter;
 import org.onosproject.cli.AbstractShellCommand;
 import org.slf4j.helpers.MessageFormatter;
@@ -69,10 +68,10 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
 
   @Override
   protected void execute() {
-    final AirsApp airsApp = AbstractShellCommand.get(AirsApp.class);
+    final AirsAttackApp airsAttackApp = AbstractShellCommand.get(AirsAttackApp.class);
 
     // Add log callback
-    airsApp.addLogCallback(this);
+    airsAttackApp.addLogCallback(this);
 
     // Handle command
     commandStr = Optional.ofNullable(commandStr).orElse(CMD_HELP);
@@ -107,17 +106,17 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
       final long delayMs = Long.parseLong(delayMsStr);
       final long intervalMs = Long.parseLong(intervalMsStr);
       final int countdownSec = Integer.parseInt(countdownSecStr);
-      airsApp.executeAttackByName(attackStr, delayMs, intervalMs, countdownSec, fg, params);
+      airsAttackApp.executeAttackByName(attackStr, delayMs, intervalMs, countdownSec, fg, params);
     }
     else if (isCancel) {
-      airsApp.cancelAttackIfRunning();
+      airsAttackApp.cancelAttackIfRunning();
     }
     else {
-      airsApp.printAttackHelp();
+      airsAttackApp.printAttackHelp();
     }
 
     // Remove log callback
-    airsApp.removeLogCallback(this);
+    airsAttackApp.removeLogCallback(this);
   }
 
   @Override
@@ -163,7 +162,7 @@ public class AirsAttackCmd extends AbstractShellCommand implements LogCallback {
 
     @Override
     public List<String> choices() {
-      return AirsApp.getAttackNames();
+      return AirsAttackApp.getAttackNames();
     }
   }
 }

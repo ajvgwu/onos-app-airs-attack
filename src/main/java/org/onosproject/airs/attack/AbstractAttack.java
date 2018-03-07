@@ -2,8 +2,6 @@ package org.onosproject.airs.attack;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.onosproject.airs.LogCallback;
 import org.slf4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -99,7 +97,8 @@ public abstract class AbstractAttack implements Runnable {
         logInfo("AIRS attack '{}' will execute in {} ...", getLogName(), i);
         Thread.sleep(1000);
       }
-    } catch (final InterruptedException e) {
+    }
+    catch (final InterruptedException e) {
       logInfo("AIRS attack '" + getLogName() + "' was interrupted during countdown", e);
       return;
     }
@@ -108,7 +107,8 @@ public abstract class AbstractAttack implements Runnable {
     logInfo("AIRS attack '{}' is now being executed", getLogName());
     try {
       runAttack();
-    } catch (final Exception e) {
+    }
+    catch (final Exception e) {
       logException("AIRS attack '" + getLogName() + "' encountered an error during execution", e);
     }
 

@@ -10,18 +10,18 @@
         <version>1.12.0</version>
     </parent>
 
-    <artifactId>onos-app-airs</artifactId>
+    <artifactId>onos-app-airs-attack</artifactId>
     <packaging>bundle</packaging>
 
-    <description>ONOS application for AIRS testbed</description>
+    <description>AIRS-ONOS application for executing attacks</description>
 
     <properties>
-        <onos.app.name>org.onosproject.airs</onos.app.name>
+        <onos.app.name>org.onosproject.airs.attack</onos.app.name>
         <onos.app.origin>NRL Code 5542</onos.app.origin>
-        <onos.app.title>AIRS Testbed App</onos.app.title>
+        <onos.app.title>AIRS-ONOS Attack App</onos.app.title>
         <onos.app.category>Test</onos.app.category>
         <onos.app.url>https://www.nrl.navy.mil/itd/chacs/5542</onos.app.url>
-        <onos.app.readme>ONOS application for AIRS testbed.</onos.app.readme>
+        <onos.app.readme>AIRS-ONOS application for executing attacks.</onos.app.readme>
     </properties>
 
     <dependencies>

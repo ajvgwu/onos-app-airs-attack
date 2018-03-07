@@ -44,7 +44,8 @@ public class AppEviction extends AbstractAttack {
     if (matchingBundle != null) {
       try {
         matchingBundle.uninstall();
-      } catch (final BundleException e) {
+      }
+      catch (final BundleException e) {
         logException("could not uninstall bundle '" + matchingBundle.getSymbolicName() + "'", e);
       }
     }

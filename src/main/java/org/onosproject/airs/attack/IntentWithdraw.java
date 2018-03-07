@@ -1,7 +1,6 @@
 package org.onosproject.airs.attack;
 
 import java.util.Iterator;
-
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.slf4j.Logger;

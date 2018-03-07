@@ -1,7 +1,6 @@
 package org.onosproject.airs.attack;
 
 import java.util.Iterator;
-
 import org.onosproject.net.Device;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowEntry;
@@ -59,7 +58,8 @@ public class FlowTableClear extends AbstractAttack {
       // Don't go too fast, wait a reasonable amount of time
       try {
         Thread.sleep(100);
-      } catch (final InterruptedException e) {
+      }
+      catch (final InterruptedException e) {
         logException("interrupted during sleep", e);
       }
     }

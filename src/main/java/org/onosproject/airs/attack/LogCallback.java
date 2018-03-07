@@ -1,4 +1,4 @@
-package org.onosproject.airs;
+package org.onosproject.airs.attack;
 
 public interface LogCallback {
 
